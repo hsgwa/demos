@@ -46,16 +46,8 @@ void ImuTalker::initialize()
 void ImuTalker::publish()
 {
   sensor_msgs::msg::Imu msg;
-  // Timestamp the message to a random time before now,
-  // to demonstrate message age metric calculation.
-
-  if (std::floor(random_distribution_(random_generator_) * 2)) {
-    RCLCPP_DEBUG(get_logger(), "Adding fixed offset to message timestamp");
-    msg.header.stamp =
-      this->now() - rclcpp::Duration{0, static_cast<uint32_t>(this->now().nanoseconds() * 0.975)};
-  } else {
-    msg.header.stamp = this->now();
-  }
+  // use current time to measure real message age
+  msg.header.stamp = this->now();
 
   RCLCPP_DEBUG(get_logger(), "Publishing header: %lu", msg.header.stamp.nanosec);
   publisher_->publish(msg);
@@ -83,7 +75,16 @@ void ImuListener::start_listening()
       10,  /* QoS history_depth */
       [this](const typename sensor_msgs::msg::Imu::SharedPtr msg) -> void
       {
-        RCLCPP_DEBUG(get_logger(), "Listener heard: %lu", msg->header.stamp.nanosec);
+        auto now = this->now();
+        auto stamp_time = rclcpp::Time(msg->header.stamp.sec, msg->header.stamp.nanosec,
+                                       this->get_clock()->get_clock_type());
+        auto message_age = now - stamp_time;
+        auto message_age_ms = 1.0e-6*message_age.nanoseconds();
+
+        RCLCPP_INFO(get_logger(), "Listener heard: %lu %lu. message_age_ms: %lf",
+                    msg->header.stamp.sec, msg->header.stamp.nanosec, message_age_ms);
+
+        rclcpp::sleep_for(100ms);
       },
       subscription_options_);
   }
