@@ -76,13 +76,15 @@ void ImuListener::start_listening()
       [this](const typename sensor_msgs::msg::Imu::SharedPtr msg) -> void
       {
         auto now = this->now();
-        auto stamp_time = rclcpp::Time(msg->header.stamp.sec, msg->header.stamp.nanosec,
-                                       this->get_clock()->get_clock_type());
+        auto stamp_time = rclcpp::Time(
+          msg->header.stamp.sec, msg->header.stamp.nanosec,
+          this->get_clock()->get_clock_type());
         auto message_age = now - stamp_time;
-        auto message_age_ms = 1.0e-6*message_age.nanoseconds();
+        auto message_age_ms = 1.0e-6 * message_age.nanoseconds();
 
-        RCLCPP_INFO(get_logger(), "Listener heard: %lu %lu. message_age_ms: %lf",
-                    msg->header.stamp.sec, msg->header.stamp.nanosec, message_age_ms);
+        RCLCPP_INFO(
+          get_logger(), "Listener heard: %lu %lu. message_age_ms: %lf",
+          msg->header.stamp.sec, msg->header.stamp.nanosec, message_age_ms);
 
         rclcpp::sleep_for(100ms);
       },
